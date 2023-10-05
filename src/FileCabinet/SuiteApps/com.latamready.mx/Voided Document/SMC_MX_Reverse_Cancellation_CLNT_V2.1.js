@@ -1,168 +1,67 @@
+/* = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =\
+||   This script for WTH on Purchases                           ||
+||                                                              ||
+||  File Name: SMC_MX_Reverse_Cancellation_CLNT_V2.1.js         ||
+||                                                              ||
+||  Version Date         Author        Remarks                  ||
+||  2.1     Oct 04 2023  LatamReady    Use Script 2.1           ||
+ \= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = */
+
 /**
- * @NApiVersion 2.x
- * @NScriptType ClientScript
- * @NModuleScope SameAccount
+ *@NApiVersion 2.1
+ *@NScriptType ClientScript
+ *@NModuleScope Public
+ *@Author gerson@latamready.com
  */
-define([],
+ define(['./Latam_Library/SMC_MX_Reverse_Cancellation_CLNT_LBRY_V2.1', 'N/url', 'N/currentRecord'], function (
+    lbryReverseCancelationClnt,
+    urlApi, 
+    currentRecord
+) {
+    const STLT_ID = 'customscript_smc_mx_rever_canc_stlt';
+    let DEPLOY_ID = null;
+    let handler = null;
 
-function() {
-    
-    /**
-     * Function to be executed after page is initialized.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.mode - The mode in which the record is being accessed (create, copy, or edit)
-     *
-     * @since 2015.2
-     */
-    function pageInit(scriptContext) {
-
+    function pageInit(context) {
+        console.log(lbryReverseCancelationClnt);
+        let recordObj = context.currentRecord;
+        DEPLOY_ID = recordObj.getValue('custpage_deploy_id');
+        let featurelatam = recordObj.getValue('custpage_feature_latam');
+        handler = new lbryReverseCancelationClnt.ClntHandler({
+            deployid: DEPLOY_ID,
+            featurelatam: featurelatam
+        });
+        console.log(handler);
     }
 
-    /**
-     * Function to be executed when field is changed.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     * @param {string} scriptContext.fieldId - Field name
-     * @param {number} scriptContext.lineNum - Line number. Will be undefined if not a sublist or matrix field
-     * @param {number} scriptContext.columnNum - Line number. Will be undefined if not a matrix field
-     *
-     * @since 2015.2
-     */
-    function fieldChanged(scriptContext) {
 
+    function saveRecord(context) {
+        return handler.saveRecord(context);
     }
 
-    /**
-     * Function to be executed when field is slaved.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     * @param {string} scriptContext.fieldId - Field name
-     *
-     * @since 2015.2
-     */
-    function postSourcing(scriptContext) {
+    function back() {
+        let urlSuitelet = urlApi.resolveScript({
+            scriptId: STLT_ID,
+            deploymentId: DEPLOY_ID,
+            returnExternalUrl: false
+        });
 
+        window.location.href = urlSuitelet;
     }
 
-    /**
-     * Function to be executed after sublist is inserted, removed, or edited.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     *
-     * @since 2015.2
-     */
-    function sublistChanged(scriptContext) {
-
-    }
-
-    /**
-     * Function to be executed after line is selected.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     *
-     * @since 2015.2
-     */
-    function lineInit(scriptContext) {
-
-    }
-
-    /**
-     * Validation function to be executed when field is changed.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     * @param {string} scriptContext.fieldId - Field name
-     * @param {number} scriptContext.lineNum - Line number. Will be undefined if not a sublist or matrix field
-     * @param {number} scriptContext.columnNum - Line number. Will be undefined if not a matrix field
-     *
-     * @returns {boolean} Return true if field is valid
-     *
-     * @since 2015.2
-     */
-    function validateField(scriptContext) {
-
-    }
-
-    /**
-     * Validation function to be executed when sublist line is committed.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     *
-     * @returns {boolean} Return true if sublist line is valid
-     *
-     * @since 2015.2
-     */
-    function validateLine(scriptContext) {
-
-    }
-
-    /**
-     * Validation function to be executed when sublist line is inserted.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     *
-     * @returns {boolean} Return true if sublist line is valid
-     *
-     * @since 2015.2
-     */
-    function validateInsert(scriptContext) {
-
-    }
-
-    /**
-     * Validation function to be executed when record is deleted.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @param {string} scriptContext.sublistId - Sublist name
-     *
-     * @returns {boolean} Return true if sublist line is valid
-     *
-     * @since 2015.2
-     */
-    function validateDelete(scriptContext) {
-
-    }
-
-    /**
-     * Validation function to be executed when record is saved.
-     *
-     * @param {Object} scriptContext
-     * @param {Record} scriptContext.currentRecord - Current form record
-     * @returns {boolean} Return true if record is valid
-     *
-     * @since 2015.2
-     */
-    function saveRecord(scriptContext) {
-
+    function toggleCheckBoxes(isApplied, sublistId) {
+        let recordObj = currentRecord.get();
+        let numberLines = recordObj.getLineCount({ sublistId: sublistId });
+        for (let i = 0; i < numberLines; i++) {
+            recordObj.selectLine({ sublistId: sublistId, line: i });
+            recordObj.setCurrentSublistValue({ sublistId: sublistId, fieldId: 'apply', value: isApplied });
+        }
     }
 
     return {
         pageInit: pageInit,
-        fieldChanged: fieldChanged,
-        postSourcing: postSourcing,
-        sublistChanged: sublistChanged,
-        lineInit: lineInit,
-        validateField: validateField,
-        validateLine: validateLine,
-        validateInsert: validateInsert,
-        validateDelete: validateDelete,
-        saveRecord: saveRecord
+        saveRecord: saveRecord,
+        back: back,
+        toggleCheckBoxes: toggleCheckBoxes
     };
-    
 });

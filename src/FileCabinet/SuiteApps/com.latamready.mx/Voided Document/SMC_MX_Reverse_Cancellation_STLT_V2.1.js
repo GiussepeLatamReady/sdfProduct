@@ -14,9 +14,9 @@
  * @Author master@latamready.com
  **/
 
-define(["N/redirect", "N/task", "N/runtime", "./Latam_Library/SMC_MX_Reverse_Cancellation_LBRY_V2.1"],
-    function (redirect, task, runtime, lbryMXReverseCancellation) {
-        const ScriptName = "SMC - MX Reverse Cancellation STLT";
+define(["N/redirect", "N/runtime", "./Latam_Library/SMC_MX_Reverse_Cancellation_LBRY_V2.1"],
+    function (redirect, runtime, lbryMXReverseCancellation) {
+        const ScriptName = "SMC - MX Canceled Documents Reversed STLT";
         const CLIENT_SCRIPT = "./Latam_Library/SMC_MX_Reverse_Cancellation_CLNT_V2.1.js";
 
         function onRequest(context) {
@@ -42,7 +42,7 @@ define(["N/redirect", "N/task", "N/runtime", "./Latam_Library/SMC_MX_Reverse_Can
                         handler.loadFormValues();
                     } else {
                         handler.setFormValues();
-                        handler.loadBillSublist();
+                        handler.loadTransactionSublist();
                     }
 
                     form.clientScriptModulePath = CLIENT_SCRIPT;
