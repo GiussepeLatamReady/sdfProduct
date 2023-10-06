@@ -45,10 +45,10 @@ define([
         getNames(deploy) {
             let nameList = {
                 customdeploy_smc_mx_rever_canc_stlt: {
-                    scriptid: 'customscript_smc_mx_rever_canc_stlt',
-                    deployid: 'customdeploy_smc_mx_rever_canc_stlt',
-                    paramuser: 'custscript_smc_pe_wht_user',
-                    paramstate: 'custscript_smc_pe_wht_state'
+                    scriptid: 'customscript_smc_mx_rever_canc_log_stlt',
+                    deployid: 'customdeploy_smc_mx_rever_canc_log_stlt',
+                    paramuser: 'custscript_smc_mx_rcd_user',
+                    paramstate: 'custscript_smc_mx_rcd_state'
                 }
             };
             return nameList[deploy];
@@ -196,8 +196,8 @@ define([
                 .setHelpText({
                     help: 'custpage_type_transaction'
                 });
-            typeTransaction.isMandatory = true;   
-            
+            typeTransaction.isMandatory = true;
+
             form.addFieldGroup({
                 id: 'dateRangeGroup',
                 label: 'Rango de fechas'
@@ -209,7 +209,7 @@ define([
                     id: 'custpage_start_date',
                     type: serverWidget.FieldType.DATE,
                     label: 'Fecha de inicio',
-                    container: 'mainGroup'
+                    container: 'dateRangeGroup'
                 })
                 .setHelpText({
                     help: 'custpage_start_date'
@@ -221,11 +221,11 @@ define([
                     id: 'custpage_end_date',
                     type: serverWidget.FieldType.DATE,
                     label: 'Fecha de fin',
-                    container: 'mainGroup'
+                    container: 'dateRangeGroup'
                 })
                 .setHelpText({
                     help: 'custpage_end_date'
-                });         
+                });
 
             form.addField({
                 id: 'custpage_status',
@@ -256,16 +256,16 @@ define([
 
             if (!Number(this.params.status)) {
                 form.addSubmitButton({
-                    label: this.getText('filter')
+                    label: 'filtrar'
                 });
-                checkField.updateDisplayType({ displayType: serverWidget.FieldDisplayType.DISABLED });
+
             } else {
                 form.addSubmitButton({
-                    label: this.getText('next')
+                    label: 'siguiente'
                 });
                 form.addButton({
                     id: 'btn_back',
-                    label: this.getText('back'),
+                    label: 'Atras',
                     functionName: 'back'
                 });
 
@@ -276,19 +276,10 @@ define([
                 endDateField.updateDisplayType({ displayType: serverWidget.FieldDisplayType.DISABLED });
                 typeTransaction.updateDisplayType({ displayType: serverWidget.FieldDisplayType.DISABLED });
 
-                if (depField) {
-                    depField.updateDisplayType({ displayType: serverWidget.FieldDisplayType.DISABLED });
-                }
-                if (classField) {
-                    classField.updateDisplayType({ displayType: serverWidget.FieldDisplayType.DISABLED });
-                }
-                if (locField) {
-                    locField.updateDisplayType({ displayType: serverWidget.FieldDisplayType.DISABLED });
-                }
             }
 
             form.addResetButton({
-                label: this.getText('reset')
+                label: 'Reiniciar'
             });
 
             return form;
@@ -321,26 +312,37 @@ define([
             }
         }
 
-        fillTypeTransaction(){
+        fillTypeTransaction() {
             let typeTransactionField = this.form.getField({
                 id: 'custpage_type_transaction'
             });
 
             if (typeTransactionField) {
                 typeTransactionField.addSelectOption({ value: 0, text: '&nbsp;' });
-                for (let type in this.typesTransaction){
+
+                log.debug("this.typesTransaction:", this.typesTransaction)
+                for (let type in this.typesTransaction) {
+                    log.debug("type :", type)
                     typeTransactionField.addSelectOption({ value: type, text: this.typesTransaction[type] });
                 }
-
-            }       
+                log.debug("typeTransactionField :", typeTransactionField)
+            }
         }
 
-        getTypeTransaction(){
+        getTypeTransaction() {
             return {
-                "invoice":"Invoice",
-                "creditmemo": "Credit Memo",
-                "customerpayment":"Payment"
+                "CustInvc": "Invoice",
+                //"creditmemo": "Credit Memo",
+                "customerpayment": "Payment"
             }
+        }
+        getRecordType(type) {
+            var recordType = {
+                "CustInvc": "invoice",
+                "CustCredit": "creditmemo",
+                "customerpayment": "customerpayment"
+            }
+            return recordType[type];
         }
 
         getRedirectParams() {
@@ -477,15 +479,16 @@ define([
 
             log.debug('loadBillSublist', data.length);
 
-            data.forEach( (transaction,i) =>{
+            data.forEach((transaction, i) => {
                 sublist.setSublistValue({ id: 'apply', line: i, value: 'F' });
-                sublist.setSublistValue({ id: 'internalidtext', line: i, value: transaction.id });
-                sublist.setSublistValue({ id: 'internalid', line: i, value: urlID });
+                sublist.setSublistValue({ id: 'internalidtext', line: i, value: transaction.id }); 
                 sublist.setSublistValue({ id: 'tranid', line: i, value: transaction.tranid });
                 sublist.setSublistValue({ id: 'type_transaction', line: i, value: transaction.typeName });
-                sublist.setSublistValue({ id: 'doctype', line: i, value: transaction.legalDocumentType });
-                let tranUrl = url.resolveRecord({ recordType: transaction.typeID, recordId: transaction.id, isEditMode: false });
+                sublist.setSublistValue({ id: 'legal_document_type', line: i, value: transaction.legalDocumentType });
+                let tranUrl = url.resolveRecord({ recordType: this.getRecordType(transaction.typeID), recordId: transaction.id, isEditMode: false });
                 let urlID = `<a class="dottedlink" href=${tranUrl} target="_blank">${transaction.id}</a>`;
+                sublist.setSublistValue({ id: 'internalid', line: i, value: urlID });
+                sublist.setSublistValue({ id: 'total_amt', line: i, value: transaction.amount });
             })
 
             if (data.length) {
@@ -496,63 +499,66 @@ define([
         getTransactions() {
             let data = [];
             //let { vendor, multivendor, currency, ap_account, subsidiary, date } = this.params;
-            let {subsidiary,typeTransaction,endDate,startDate} = this.params
-            if (Number(currency) && Number(ap_account)) {
-                let filters = [
-                    ['type', 'anyof', typeTransaction],
-                    'AND',
-                    ['custbody_lmry_pe_estado_sf', 'is', 'Cancelado'],
-                    'AND',
-                    ['mainline', 'is', 'T'],
-                ];
-
-                if (startDate != null && startDate != '') {
-                    filters.push(search.createFilter({name: 'trandate',operator: 'onorafter',values: startDate }));
-                }
-                if (endDate != null && endDate != '') {
-                    filters.push(search.createFilter({name: 'trandate', operator: 'onorbefore', values: endDate }));
-                }
-                
-                
-                let settings = [];
-
-                if (this.FEAT_SUBS == true || this.FEAT_SUBS == 'T') {
-                    filters.push('AND', ['subsidiary', 'anyof', subsidiary]);
-                    settings = [search.createSetting({ name: 'consolidationtype', value: 'NONE' })];
-                }
-
-                let columns = [];
-                columns.push(search.createColumn({ name: 'internalid', sort: search.Sort.DESC }));
-                columns.push(search.createColumn({ name: 'type' }));
-                columns.push(search.createColumn({ name: 'custbody_lmry_document_type' }));
-                columns.push(search.createColumn({ name: 'formulatext', formula: '{tranid}' }));      
-                columns.push(search.createColumn({ name: 'amount' }));
-
-                let searchTransactions = search.create({
-                    type: 'transaction',
-                    filters: filters,
-                    columns: columns,
-                    settings: settings
-                });
-
-                let pageData = searchTransactions.runPaged({ pageSize: 1000 });
-                if (pageData) {
-                    pageData.pageRanges.forEach(function (pageRange) {
-                        let page = pageData.fetch({ index: pageRange.index });
-                        page.data.forEach(function (result){
-                            let transaction = {};
-                            transaction.id = result.getValue('internalid');
-                            transaction.typeName = result.getText('type');
-                            transaction.typeID = result.getValue('type');
-                            transaction.legalDocumentType = result.getText('custbody_lmry_document_type') || '';
-                            transaction.tranid = result.getValue('formulatext') || '';
-                            transaction.amount = result.getValue('amount');
-
-                            data.push(transaction);
-                        });
-                    });
-                }
+            let { subsidiary, typeTransaction, endDate, startDate } = this.params
+            log.debug("this.params",this.params)
+            let filters = [
+                ['type', 'anyof', typeTransaction],
+                'AND',
+                ['custbody_lmry_pe_estado_sf', 'is', 'Cancelado'],
+                'AND',
+                ['mainline', 'is', 'T'],
+                'AND',
+                ["applyingtransaction", "noneof", "@NONE@"]
+            ];
+            log.debug("startDate",startDate)
+            log.debug("endDate",endDate)
+            if (startDate != null && startDate != '') {
+                filters.push(search.createFilter({ name: 'trandate', operator: 'onorafter', values: startDate }));
             }
+            if (endDate != null && endDate != '') {
+                filters.push(search.createFilter({ name: 'trandate', operator: 'onorbefore', values: endDate }));
+            }
+
+
+            let settings = [];
+
+            if (this.FEAT_SUBS == true || this.FEAT_SUBS == 'T') {
+                filters.push('AND', ['subsidiary', 'anyof', subsidiary]);
+                settings = [search.createSetting({ name: 'consolidationtype', value: 'NONE' })];
+            }
+
+            let columns = [];
+            columns.push(search.createColumn({ name: 'internalid', sort: search.Sort.DESC }));
+            columns.push(search.createColumn({ name: 'type' }));
+            columns.push(search.createColumn({ name: 'custbody_lmry_document_type' }));
+            columns.push(search.createColumn({ name: 'formulatext', formula: '{tranid}' }));
+            columns.push(search.createColumn({ name: 'amount' }));
+
+            let searchTransactions = search.create({
+                type: 'transaction',
+                filters: filters,
+                columns: columns,
+                settings: settings
+            });
+
+            let pageData = searchTransactions.runPaged({ pageSize: 1000 });
+            if (pageData) {
+                pageData.pageRanges.forEach(function (pageRange) {
+                    let page = pageData.fetch({ index: pageRange.index });
+                    page.data.forEach(function (result) {
+                        let transaction = {};
+                        transaction.id = result.getValue('internalid');
+                        transaction.typeName = result.getText('type');
+                        transaction.typeID = result.getValue('type');
+                        transaction.legalDocumentType = result.getText('custbody_lmry_document_type') || '';
+                        transaction.tranid = result.getValue('formulatext') || '';
+                        transaction.amount = Number(result.getValue('amount'));
+
+                        data.push(transaction);
+                    });
+                });
+            }
+
             log.debug("data", JSON.stringify(data));
             return data;
         }
@@ -570,8 +576,8 @@ define([
             // 20 : Mexico	Basic	Localization
             log.debug('featureLatam', featureLatam);
             featureLatam = LibraryMail.getAuthorization(20, licenses);
-            let MPRD_SCRIPT_ID =  this.names.scriptid;
-            let MPRD_DEPLOY_ID =  this.names.deployid;
+            let MPRD_SCRIPT_ID = this.names.scriptid;
+            let MPRD_DEPLOY_ID = this.names.deployid;
             let parameters = {};
             if (featureLatam) {
                 parameters.custscript_smc_mx_rcd_state = parametros.state;

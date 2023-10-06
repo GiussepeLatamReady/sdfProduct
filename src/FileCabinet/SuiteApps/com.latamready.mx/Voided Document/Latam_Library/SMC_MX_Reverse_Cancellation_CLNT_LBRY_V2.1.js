@@ -97,7 +97,6 @@ define([
                 let fieldObj = recordObj.getField({ fieldId: mandatoryFields[i] });
                 if (fieldObj) {
                     let value = recordObj.getValue({ fieldId: mandatoryFields[i] }) || '';
-                    value = Number(value);
                     if (!value) {
                         // Please enter value(s) for: {1}
                         alert('Ingrese un valor para :'+ [fieldObj.label]);
@@ -196,7 +195,7 @@ define([
             let numberLines = currentRecord.getLineCount({ sublistId: 'custpage_results_list' });
             for (let i = 0; i < numberLines; i++) {
 
-                isApplied = currentRecord.getSublistValue({
+                let isApplied = currentRecord.getSublistValue({
                     sublistId: 'custpage_results_list',
                     fieldId: 'apply',
                     line: i
@@ -214,13 +213,14 @@ define([
             let recordlog = record.create({
                 type: 'customrecord_smc_mx_rever_cancel_log'
             });
+            console.log("form :", form)
             recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_subsi', value: form.subsidiary });
             recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_start_date', value: form.startDate });
             recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_end_date', value: form.endDate });
             recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_state', value: 'Preview' });
             recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_employee',value: runtime.getCurrentUser().id});
             recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_transact',value: JSON.stringify(form.ids)});
-            recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_type',value: getTypeTransaction(form.typeTransaction)});
+            recordlog.setValue({ fieldId: 'custrecord_smc_mx_rcd_log_type',value: this.getTypeTransaction(form.typeTransaction) });
             idlog +=recordlog.save({ enableSourcing: true, ignoreMandatoryFields: true, disableTriggers: true }) +'|';
 
             currentRecord.setValue({ fieldId: 'custpage_log_id', value: idlog, ignoreFieldChange: true });
@@ -229,15 +229,18 @@ define([
             return true;
         }
 
+        getTypeTransaction(typeText){
+            var typeTransaction = {
+                "CustInvc":7,
+                "CustCredit": 10,
+                "customerpayment":9
+            }
+            return typeTransaction[typeText]
+        }
+
     }
 
-    function getTypeTransaction(){
-        return {
-            "Invoice":"invoice",
-            "Credit Memo": "creditmemo",
-            "Payment":"customerpayment"
-        }
-    }
+    
     function handleError(functionName, err) {
         console.error(functionName, err);
         lbryLog.doLog({ title: functionName, message: err, relatedScript: ScriptName });

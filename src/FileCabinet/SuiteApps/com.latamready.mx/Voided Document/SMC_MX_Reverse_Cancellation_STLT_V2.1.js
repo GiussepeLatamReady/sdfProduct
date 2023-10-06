@@ -17,7 +17,7 @@
 define(["N/redirect", "N/runtime", "./Latam_Library/SMC_MX_Reverse_Cancellation_LBRY_V2.1"],
     function (redirect, runtime, lbryMXReverseCancellation) {
         const ScriptName = "SMC - MX Canceled Documents Reversed STLT";
-        const CLIENT_SCRIPT = "./Latam_Library/SMC_MX_Reverse_Cancellation_CLNT_V2.1.js";
+        const CLIENT_SCRIPT = "./SMC_MX_Reverse_Cancellation_CLNT_V2.1.js";
 
         function onRequest(context) {
 
